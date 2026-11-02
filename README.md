@@ -1,4 +1,2 @@
 # Vehicle-Rental-Service
-## Nurgissa Pernebay
-## Abish Adil
-## Adilgereyev Nuraly
+## Nurgissa Pernebay | Abish Adil | Adilgereyev Nuraly
