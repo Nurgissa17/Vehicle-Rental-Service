@@ -1,8 +1,7 @@
 
-
 # Vehicle Rental Service
 
-This is our Java console project for renting cars, bikes and vans. We used six design patterns in one program.
+Java console project for renting cars, bikes and vans. We used six design patterns for vehicle creation, pricing, insurance, payment and notifications.
 
 ## Team
 
@@ -13,11 +12,15 @@ This is our Java console project for renting cars, bikes and vans. We used six d
 ## Design Patterns
 
 - **Factory Method** - `CarFactory`, `BikeFactory` and `VanFactory` create vehicles.
-- **Observer** - `Customer` gets a message when a vehicle is available again.
-- **Strategy** - `HourlyPricing` and `DailyPricing` calculate the rental price.
-- **Decorator** - `InsuranceDecorator` adds 500 if the user chooses insurance.
-- **Adapter** - `PaymentAdapter` connects `Payment` with `OldPaymentService`.
-- **Facade** - `RentalFacade` brings all the rental steps together.
+- **Observer** - `Vehicle` notifies `Customer` when it becomes available again.
+- **Strategy** - `HourlyPricing` and `DailyPricing` calculate different rental prices.
+- **Decorator** - `InsuranceDecorator` adds 500 to the base price.
+- **Adapter** - `PaymentAdapter` connects `Payment` to `OldPaymentService`.
+- **Facade** - `RentalFacade` connects all the rental steps.
+
+## How It Works
+
+The user selects a vehicle, hourly or daily pricing, duration and insurance. `RentalFacade` creates the vehicle, calculates the total and processes a simulated payment. For the demo, the vehicle is returned immediately and `Customer` receives a notification.
 
 ## UML Class Diagram
 
@@ -70,12 +73,12 @@ classDiagram
     Payment <|.. PaymentAdapter
     PaymentAdapter --> OldPaymentService
 
-    Main --> RentalFacade
-    RentalFacade --> VehicleFactory
-    RentalFacade --> RentalPricing
-    RentalFacade --> RentalCost
-    RentalFacade --> Payment
-    RentalFacade --> Vehicle
+    Main ..> RentalFacade
+    RentalFacade ..> VehicleFactory
+    RentalFacade ..> RentalPricing
+    RentalFacade ..> RentalCost
+    RentalFacade ..> Payment
+    RentalFacade ..> Vehicle
 ```
 
 ## UML Sequence Diagram
@@ -84,20 +87,25 @@ classDiagram
 sequenceDiagram
     actor User
     participant Main
-    participant RentalFacade
-    participant VehicleFactory
+    participant Facade as RentalFacade
+    participant Factory as VehicleFactory
     participant Vehicle
+    participant Payment as PaymentAdapter
     participant Customer
 
-    User->>Main: Select vehicle, price type, duration, insurance
-    Main->>RentalFacade: rent(...)
-    RentalFacade->>VehicleFactory: createVehicle()
-    VehicleFactory-->>RentalFacade: Vehicle
-    Note over RentalFacade: Calculate price, add insurance, process payment
-    RentalFacade->>Vehicle: setAvailable(false)
-    RentalFacade-->>Main: Vehicle
-    Main->>RentalFacade: returnVehicle(vehicle)
-    RentalFacade->>Vehicle: setAvailable(true)
+    User->>Main: Choose vehicle, pricing, duration, insurance
+    Main->>Facade: rent(...)
+    Facade->>Factory: createVehicle()
+    Factory-->>Facade: Vehicle
+    Facade->>Vehicle: addObserver(customer)
+    Note over Facade: Calculate price using Strategy
+    Note over Facade: Add insurance using Decorator if selected
+    Facade->>Payment: processPayment(total)
+    Note over Payment: Calls OldPaymentService.pay(total)
+    Facade->>Vehicle: setAvailable(false)
+    Facade-->>Main: Vehicle
+    Main->>Facade: returnVehicle(vehicle)
+    Facade->>Vehicle: setAvailable(true)
     Vehicle->>Customer: update(vehicle)
 ```
 
@@ -111,4 +119,8 @@ javac -d out Main.java Vehicle.java factory/*.java observer/*.java strategy/*.ja
 java -cp out src.Main
 ```
 
-The program asks for a vehicle, hourly or daily pricing, duration and insurance. Payment is simulated in the console, and the vehicle is returned at the end of the demo.
+## Example
+
+Input: `1` (Car), `2` (Daily), `2` days, `1` (Insurance).
+
+Output: `Paid: 12500.0`, then `Linsh: Car is available again`.
