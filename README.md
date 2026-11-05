@@ -28,24 +28,39 @@ The user selects a vehicle, hourly or daily pricing, duration and insurance. `Re
 classDiagram
     class Vehicle {
         <<abstract>>
+        +getName() String
+        +getHourlyRate() double
+        +getDailyRate() double
+        +setAvailable(available) void
     }
     class VehicleFactory {
         <<abstract>>
+        +createVehicle() Vehicle
     }
     class PricingStrategy {
         <<interface>>
+        +calculate(vehicle, duration) double
     }
     class Subject {
         <<interface>>
+        +addObserver(observer) void
+        +notifyObservers() void
     }
     class Observer {
         <<interface>>
+        +update(vehicle) void
     }
     class RentalCost {
         <<interface>>
+        +getCost() double
     }
     class Payment {
         <<interface>>
+        +processPayment(amount) void
+    }
+    class RentalFacade {
+        +rent(factory, strategy, duration, insurance, observer) Vehicle
+        +returnVehicle(vehicle) void
     }
 
     Vehicle <|-- Car
@@ -85,23 +100,28 @@ classDiagram
 
 ```mermaid
 sequenceDiagram
-    actor User
     participant Main
     participant Facade as RentalFacade
     participant Factory as VehicleFactory
+    participant Pricing as RentalPricing
     participant Vehicle
     participant Payment as PaymentAdapter
+    participant OldPaymentService
     participant Customer
 
-    User->>Main: Choose vehicle, pricing, duration, insurance
-    Main->>Facade: rent(...)
+    Main->>Facade: rent(factory, strategy, duration, insurance, customer)
     Facade->>Factory: createVehicle()
     Factory-->>Facade: Vehicle
     Facade->>Vehicle: addObserver(customer)
-    Note over Facade: Calculate price using Strategy
-    Note over Facade: Add insurance using Decorator if selected
-    Facade->>Payment: processPayment(total)
-    Note over Payment: Calls OldPaymentService.pay(total)
+    Facade->>Pricing: calculate(vehicle, duration)
+    Note over Pricing: Uses HourlyPricing or DailyPricing
+    Pricing-->>Facade: base price
+    Note over Facade: cost = BasicRental(base price)
+    opt Insurance selected
+        Note over Facade: cost = InsuranceDecorator(cost)
+    end
+    Facade->>Payment: processPayment(cost.getCost())
+    Payment->>OldPaymentService: pay(amount)
     Facade->>Vehicle: setAvailable(false)
     Facade-->>Main: Vehicle
     Main->>Facade: returnVehicle(vehicle)
